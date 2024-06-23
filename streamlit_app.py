@@ -1,40 +1,71 @@
-import altair as alt
-import numpy as np
-import pandas as pd
 import streamlit as st
+import random
 
-"""
-# Welcome to Streamlit!
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+def get_number(length: int) -> int:
+    return random.randint(1, length)
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+def init(length: int = 100, post_init=False):
+    if not post_init:
+        st.session_state.input = 0
+        st.session_state.win = 0
+    st.session_state.number = get_number(length)
+    st.session_state.tries = 0
+    st.session_state.over = False
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+def restart():
+    init(st.session_state.length, post_init=True)
+    st.session_state.input += 1
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+def main():
+    st.write(
+        """
+        # 🔢 Guess Number
+        """
+    )
+
+    if 'number' not in st.session_state:
+        init()
+
+    reset, win, set_range = st.columns([0.39, 1, 1])
+    reset.button('New game', on_click=restart)
+
+    with set_range.expander('Settings'):
+        st.select_slider(
+            'Set max range',
+            [10**i for i in range(1, 6)],
+            value=100,
+            key='length',
+            on_change=restart,
+        )
+
+    placeholder, debug = st.empty(), st.empty()
+    guess = placeholder.number_input(
+        f'Enter your guess from 1 - {st.session_state.length}',
+        key=st.session_state.input,
+        min_value=0,
+        max_value=st.session_state.length,
+    )
+
+    if guess:
+        st.session_state.tries += 1
+        if guess < st.session_state.number:
+            debug.warning(f'{guess} is too low!')
+        elif guess > st.session_state.number:
+            debug.warning(f'{guess} is too high!')
+        else:
+            debug.success(
+                f'Yay! you guessed it right, it only took you {st.session_state.tries} tries 🎈'
+            )
+            st.session_state.over = True
+            st.session_state.win += 1
+            placeholder.empty()
+
+    win.button(f'🏆 {st.session_state.win}')
+
+
+if __name__ == '__main__':
+    main()
