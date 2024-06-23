@@ -23,7 +23,7 @@ def restart():
 def main():
     st.write(
         """
-        # 🔢 Guess Number
+        # 🔢 Zahlen Raten
         """
     )
 
